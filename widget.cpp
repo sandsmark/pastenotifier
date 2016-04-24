@@ -8,30 +8,35 @@
 #include <QMimeData>
 #include <QDebug>
 
-#define WIDTH 200
-#define HEIGHT 50
-
-Widget::Widget(QWidget *parent)
-    : QWidget(parent),
-      m_label(new QLabel)
+Widget::Widget()
+    : QLabel()
 {
-    m_label->setTextFormat(Qt::PlainText);
-    m_label->setMaximumWidth(512);
-    m_label->setMaximumHeight(512);
-    m_label->setAlignment(Qt::AlignLeft | Qt::AlignTop);
-    setWindowFlags(Qt::WindowStaysOnTopHint | Qt::X11BypassWindowManagerHint);
-    setLayout(new QVBoxLayout);
-    layout()->addWidget(m_label);
-    layout()->setContentsMargins(0, 0, 0, 0);
+    setWindowFlags(Qt::WindowStaysOnTopHint | Qt::X11BypassWindowManagerHint | Qt::WindowDoesNotAcceptFocus);
+
+    setTextInteractionFlags(Qt::TextSelectableByMouse);
+    setTextFormat(Qt::PlainText);
+    setMaximumWidth(512);
+    setMaximumHeight(1024);
+    setMinimumWidth(512);
+    setMinimumHeight(128);
+    setAlignment(Qt::AlignLeft | Qt::AlignTop);
 
     connect(qApp->clipboard(), &QClipboard::dataChanged, this, &Widget::onClipboardUpdated);
     connect(&m_timer, &QTimer::timeout, this, &QWidget::hide);
 
+
+    setStyleSheet(QStringLiteral("Widget {"
+                                    "border: 3px solid white;"
+                                    "background-color: black;"
+                                    "selection-color: black;"
+                                    "selection-background-color: white;"
+                                 "}"));
+
+    onClipboardUpdated();
 }
 
 Widget::~Widget()
 {
-
 }
 
 void Widget::mousePressEvent(QMouseEvent *event)
@@ -45,16 +50,33 @@ void Widget::mousePressEvent(QMouseEvent *event)
 
 void Widget::onClipboardUpdated()
 {
-    resize(WIDTH, HEIGHT);
+    QClipboard *clip = qApp->clipboard();
+
+    if (clip->mimeData()->hasImage()) {
+        QPixmap image = clip->pixmap().scaled(maximumSize(), Qt::KeepAspectRatio);
+        setPixmap(image);
+        resize(image.size());
+    } else {
+        QString text = clip->text().toHtmlEscaped();
+
+        QFontMetrics metrics(font());
+        resize(metrics.size(Qt::TextExpandTabs, text));
+
+        QString newText;
+        int h = metrics.height() * 2;
+        for (const QString &line : text.split('\n')) {
+            newText.append(metrics.elidedText(line, Qt::ElideRight, width()) + '\n');
+            if (h > height()) {
+                break;
+            }
+            h += metrics.height();
+        }
+        setText(newText);
+        setSelection(0, newText.length());
+    }
+
     move(qApp->desktop()->availableGeometry(this).width() - width() - 10, 10);
     show();
 
-    QClipboard *clip = qApp->clipboard();
-    if (clip->mimeData()->hasImage()) {
-        m_label->setPixmap(clip->pixmap().scaled(m_label->size(), Qt::KeepAspectRatio));
-    } else {
-        m_label->setText(clip->text());
-    }
-
-    m_timer.start(2000);
+    m_timer.start(5000);
 }

@@ -1,17 +1,17 @@
 #ifndef WIDGET_H
 #define WIDGET_H
 
-#include <QWidget>
+#include <QLabel>
 #include <QTimer>
 
 class QLabel;
 
-class Widget : public QWidget
+class Widget : public QLabel
 {
     Q_OBJECT
 
 public:
-    Widget(QWidget *parent = 0);
+    Widget();
     ~Widget();
 
 protected:
@@ -21,7 +21,6 @@ private slots:
     void onClipboardUpdated();
 
 private:
-    QLabel *m_label;
     QTimer m_timer;
 };
 
