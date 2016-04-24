@@ -93,7 +93,7 @@ void Widget::onClipboardUpdated()
         QString newText;
         int h = metrics.height() * 2;
         for (const QString &line : text.split('\n')) {
-            newText.append(metrics.elidedText(line, Qt::ElideRight, width()) + '\n');
+            newText.append(metrics.elidedText(line, Qt::ElideRight, width() - 10) + '\n');
             if (h > height()) {
                 break;
             }
