@@ -7,11 +7,13 @@
 #include <QClipboard>
 #include <QMimeData>
 #include <QDebug>
+#include <QStandardPaths>
+#include <QDir>
 
 Widget::Widget()
     : QLabel()
 {
-    setWindowFlags(Qt::WindowStaysOnTopHint | Qt::X11BypassWindowManagerHint | Qt::WindowDoesNotAcceptFocus);
+    setWindowFlags(Qt::WindowStaysOnTopHint | Qt::X11BypassWindowManagerHint | Qt::WindowDoesNotAcceptFocus | Qt::Tool);
 
     setTextInteractionFlags(Qt::TextSelectableByMouse);
     setTextFormat(Qt::PlainText);
@@ -24,13 +26,39 @@ Widget::Widget()
     connect(qApp->clipboard(), &QClipboard::dataChanged, this, &Widget::onClipboardUpdated);
     connect(&m_timer, &QTimer::timeout, this, &QWidget::hide);
 
+     QString stylesheet(
+                "Widget {\n"
+                "    border: 3px solid white;\n"
+                "    background-color: black;\n"
+                "    selection-color: black;\n"
+                "    selection-background-color: white;\n"
+                "}\n"
+                );
 
-    setStyleSheet(QStringLiteral("Widget {"
-                                    "border: 3px solid white;"
-                                    "background-color: black;"
-                                    "selection-color: black;"
-                                    "selection-background-color: white;"
-                                 "}"));
+    const QString configLocation = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    QDir configDir(configLocation);
+    if (!configDir.exists()) {
+        configDir.mkpath(configLocation);
+    }
+
+    QString stylePath = configDir.absoluteFilePath("pastenotifier.qss");
+    QFile styleFile(stylePath);
+    if (styleFile.exists()) {
+        if (styleFile.open(QIODevice::ReadOnly)) {
+            qDebug() << "Loading stylesheet" << stylePath;
+            stylesheet = QString::fromLocal8Bit(styleFile.readAll());
+        } else {
+            qWarning() << "Unable to open qss file:" << stylePath << styleFile.errorString();
+        }
+    } else {
+        if (styleFile.open(QIODevice::WriteOnly)) {
+            styleFile.write(stylesheet.toUtf8());
+        } else {
+            qWarning() << "Unable to open qss file for writing:" << stylePath << styleFile.errorString();
+        }
+    }
+
+    setStyleSheet(stylesheet);
 
     onClipboardUpdated();
 }
