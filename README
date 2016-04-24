@@ -1,0 +1,4 @@
+to build: qmake && make
+
+you can tweak the look by editing ~/.config/pastenotifier/pastenotifier.qss
+
