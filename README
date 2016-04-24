@@ -1,4 +1,7 @@
 to build: qmake && make
 
-you can tweak the look by editing ~/.config/pastenotifier/pastenotifier.qss
+you can tweak the look by editing ~/.config/pastenotifier/pastenotifier.qss,
+which is automatically created if it doesn't exist.
+
+https://doc.qt.io/qt-5/stylesheet-reference.html
 
