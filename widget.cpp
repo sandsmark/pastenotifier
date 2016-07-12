@@ -69,7 +69,7 @@ Widget::Widget() : QWidget(),
         }
     }
 
-    QAction *showAction = new QAction;
+    QAction *showAction = new QAction(this);
     connect(showAction, &QAction::triggered, [=](){
         setWindowOpacity(1);
         show();
