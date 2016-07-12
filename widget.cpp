@@ -1,4 +1,8 @@
 #include "widget.h"
+
+#include <KGlobalAccel>
+
+#include <QAction>
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QApplication>
@@ -64,6 +68,15 @@ Widget::Widget() : QWidget(),
             qWarning() << "Unable to open qss file for writing:" << stylePath << styleFile.errorString();
         }
     }
+
+    QAction *showAction = new QAction;
+    connect(showAction, &QAction::triggered, [=](){
+        setWindowOpacity(1);
+        show();
+        m_timer.start(5000);
+    });
+    showAction->setObjectName("showpastenotifier");
+    KGlobalAccel::setGlobalShortcut(showAction, QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_V));
 
     setStyleSheet(stylesheet);
 
