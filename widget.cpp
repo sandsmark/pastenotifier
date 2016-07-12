@@ -77,6 +77,7 @@ Widget::~Widget()
 void Widget::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
+        m_timer.stop();
         hide();
     } else if (event->button()) {
         qApp->quit();
