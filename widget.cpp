@@ -8,28 +8,35 @@
 #include <QMimeData>
 #include <QDebug>
 #include <QStandardPaths>
+#include <QVBoxLayout>
 #include <QDir>
 
-Widget::Widget()
-    : QLabel()
+Widget::Widget() : QWidget(),
+      m_label(new QLabel)
 {
-    setWindowFlags(Qt::WindowStaysOnTopHint | Qt::X11BypassWindowManagerHint | Qt::WindowDoesNotAcceptFocus | Qt::Tool);
+    setLayout(new QVBoxLayout);
+    layout()->addWidget(m_label);
 
-    setTextInteractionFlags(Qt::TextSelectableByMouse);
-    setTextFormat(Qt::PlainText);
+    setWindowFlags(Qt::WindowStaysOnTopHint | Qt::X11BypassWindowManagerHint | Qt::WindowDoesNotAcceptFocus | Qt::Tool);
+    setAttribute(Qt::WA_TranslucentBackground);
+
+    m_label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    m_label->setTextFormat(Qt::PlainText);
     setMaximumWidth(512);
     setMaximumHeight(1024);
     setMinimumWidth(512);
     setMinimumHeight(128);
-    setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    m_label->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+
 
     connect(qApp->clipboard(), &QClipboard::dataChanged, this, &Widget::onClipboardUpdated);
+    m_timer.setSingleShot(true);
     connect(&m_timer, &QTimer::timeout, this, &QWidget::hide);
 
      QString stylesheet(
-                "Widget {\n"
+                "QLabel {\n"
                 "    border: 3px solid white;\n"
-                "    background-color: black;\n"
+                "    background-color: rgba(0, 0, 0, 128);\n"
                 "    selection-color: black;\n"
                 "    selection-background-color: white;\n"
                 "}\n"
@@ -82,7 +89,7 @@ void Widget::onClipboardUpdated()
 
     if (clip->mimeData()->hasImage()) {
         QPixmap image = clip->pixmap().scaled(maximumSize(), Qt::KeepAspectRatio);
-        setPixmap(image);
+        m_label->setPixmap(image);
         resize(image.size());
     } else {
         QString text = clip->text().toHtmlEscaped();
@@ -99,8 +106,8 @@ void Widget::onClipboardUpdated()
             }
             h += metrics.height();
         }
-        setText(newText);
-        setSelection(0, newText.length());
+        m_label->setText(newText);
+        m_label->setSelection(0, newText.length());
     }
 
     move(qApp->desktop()->availableGeometry(this).width() - width() - 10, 10);
