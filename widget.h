@@ -16,6 +16,8 @@ public:
 
 protected:
     void mousePressEvent(QMouseEvent *event);
+    void enterEvent(QEvent *);
+    void leaveEvent(QEvent *);
 
 private slots:
     void onClipboardUpdated();

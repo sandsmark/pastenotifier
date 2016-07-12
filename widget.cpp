@@ -84,6 +84,16 @@ void Widget::mousePressEvent(QMouseEvent *event)
     }
 }
 
+void Widget::enterEvent(QEvent *)
+{
+    setWindowOpacity(0.3);
+}
+
+void Widget::leaveEvent(QEvent *)
+{
+    setWindowOpacity(1);
+}
+
 void Widget::onClipboardUpdated()
 {
     QClipboard *clip = qApp->clipboard();
@@ -113,6 +123,7 @@ void Widget::onClipboardUpdated()
 
     move(qApp->desktop()->availableGeometry(this).width() - width() - 10, 10);
     show();
+    setWindowOpacity(1);
 
     m_timer.start(5000);
 }
