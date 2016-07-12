@@ -20,7 +20,7 @@ Widget::Widget() : QWidget(),
     setWindowFlags(Qt::WindowStaysOnTopHint | Qt::X11BypassWindowManagerHint | Qt::WindowDoesNotAcceptFocus | Qt::Tool);
     setAttribute(Qt::WA_TranslucentBackground);
 
-    m_label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    m_label->setTextInteractionFlags(Qt::TextSelectableByKeyboard);
     m_label->setTextFormat(Qt::PlainText);
     setMaximumWidth(512);
     setMaximumHeight(1024);
