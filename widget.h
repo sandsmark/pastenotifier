@@ -23,8 +23,13 @@ private slots:
     void onClipboardUpdated();
 
 private:
+    void updateGeometry();
+
     QLabel *m_label;
     QTimer m_timer;
+    QTimer m_updateTimer;
+
+    bool m_hasTrimmed = false;
 };
 
 #endif // WIDGET_H

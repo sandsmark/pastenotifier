@@ -33,7 +33,11 @@ Widget::Widget() : QWidget(),
     m_label->setAlignment(Qt::AlignLeft | Qt::AlignTop);
 
 
-    connect(qApp->clipboard(), &QClipboard::dataChanged, this, &Widget::onClipboardUpdated);
+    //connect(qApp->clipboard(), &QClipboard::dataChanged, this, &Widget::onClipboardUpdated);
+    connect(qApp->clipboard(), &QClipboard::dataChanged, &m_updateTimer, [=]() { m_updateTimer.start(10); });
+    connect(&m_updateTimer, &QTimer::timeout, this, &Widget::onClipboardUpdated);
+    m_updateTimer.setSingleShot(true);
+
     m_timer.setSingleShot(true);
     connect(&m_timer, &QTimer::timeout, this, &QWidget::hide);
 
@@ -110,30 +114,49 @@ void Widget::leaveEvent(QEvent *)
 void Widget::onClipboardUpdated()
 {
     QClipboard *clip = qApp->clipboard();
+    const QMimeData *mime = clip->mimeData();
 
-    if (clip->mimeData()->hasImage()) {
-        QPixmap image = clip->pixmap().scaled(maximumSize(), Qt::KeepAspectRatio);
-        m_label->setPixmap(image);
+    if (mime->hasImage()) {
+        QImage image = qvariant_cast<QImage>(clip->mimeData()->imageData());
+        image = image.scaled(maximumSize(), Qt::KeepAspectRatio);
+        m_label->setPixmap(QPixmap::fromImage(image));
         resize(image.size());
-    } else {
-        QString text = clip->text().toHtmlEscaped();
-
-        QFontMetrics metrics(font());
-        resize(metrics.size(Qt::TextExpandTabs, text));
-
-        QString newText;
-        int h = metrics.height() * 2;
-        for (const QString &line : text.split('\n')) {
-            newText.append(metrics.elidedText(line, Qt::ElideRight, width() - 10) + '\n');
-            if (h > height()) {
-                break;
-            }
-            h += metrics.height();
-        }
-        m_label->setText(newText);
-        m_label->setSelection(0, newText.length());
+        updateGeometry();
+        m_hasTrimmed = false;
+        return;
     }
 
+    QString text = clip->text().toHtmlEscaped();
+    QString trimmed = text.trimmed();
+
+    if (trimmed != text && !m_hasTrimmed) {
+        clip->setText(trimmed);
+        m_hasTrimmed = true;
+        return;
+    }
+
+    m_hasTrimmed = false;
+
+    QFontMetrics metrics(font());
+    resize(metrics.size(Qt::TextExpandTabs, text));
+
+    QString newText;
+    int h = metrics.height() * 2;
+    for (const QString &line : text.split('\n')) {
+        newText.append(metrics.elidedText(line, Qt::ElideRight, width() - 10) + '\n');
+        if (h > height()) {
+            break;
+        }
+        h += metrics.height();
+    }
+
+    m_label->setText(newText);
+    m_label->setSelection(0, newText.length());
+    updateGeometry();
+}
+
+void Widget::updateGeometry()
+{
     move(qApp->desktop()->availableGeometry(this).width() - width() - 10, 10);
     show();
     setWindowOpacity(1);
