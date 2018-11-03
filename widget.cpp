@@ -14,6 +14,7 @@
 #include <QStandardPaths>
 #include <QVBoxLayout>
 #include <QDir>
+#include <QPainter>
 
 Widget::Widget() : QWidget(),
       m_label(new QLabel)
@@ -26,12 +27,18 @@ Widget::Widget() : QWidget(),
 
     m_label->setTextInteractionFlags(Qt::TextSelectableByKeyboard);
     m_label->setTextFormat(Qt::PlainText);
-    setMaximumWidth(512);
-    setMaximumHeight(1024);
-    setMinimumWidth(512);
+    m_label->setWordWrap(true);
+    layout()->setMargin(0);
+    setMaximumWidth(1000);
+    setMaximumHeight(1000);
+    setMinimumWidth(500);
     setMinimumHeight(128);
     m_label->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    m_label->setMargin(5);
 
+    QFont font;
+    font.setPixelSize(15);
+    setFont(font);
 
     //connect(qApp->clipboard(), &QClipboard::dataChanged, this, &Widget::onClipboardUpdated);
     connect(qApp->clipboard(), &QClipboard::dataChanged, &m_updateTimer, [=]() { m_updateTimer.start(10); });
@@ -114,11 +121,31 @@ void Widget::leaveEvent(QEvent *)
 void Widget::onClipboardUpdated()
 {
     QClipboard *clip = qApp->clipboard();
-    const QMimeData *mime = clip->mimeData();
 
-    if (mime->hasImage()) {
-        QImage image = qvariant_cast<QImage>(clip->mimeData()->imageData());
-        image = image.scaled(maximumSize(), Qt::KeepAspectRatio);
+    if (clip->mimeData()->hasImage()) {
+        QImage image = clip->image();
+        QSize origSize = image.size();
+        if (image.width() > maximumWidth() - 10) {
+            image = image.scaledToWidth(maximumWidth() - 10);
+        }
+        if (image.height() > maximumHeight() - 10) {
+            image = image.scaledToHeight(maximumHeight() - 10);
+        }
+
+        {
+            QPainter p(&image);
+            QFont font;
+            font.setPixelSize(15);
+            p.setFont(font);
+            QFontMetrics metrics(font);
+            QString text = QString::number(origSize.width()) + "x" + QString::number(origSize.height());
+            QRect rect = metrics.boundingRect(text).marginsAdded(QMargins(5, 5, 5, 5));
+            rect.moveTopLeft(QPoint(0, 0));
+            p.fillRect(rect, QColor(0, 0, 0, 128));
+            p.setPen(Qt::white);
+            p.drawText(rect, Qt::AlignCenter, text);
+        }
+
         m_label->setPixmap(QPixmap::fromImage(image));
         resize(image.size());
         updateGeometry();
@@ -126,32 +153,70 @@ void Widget::onClipboardUpdated()
         return;
     }
 
-    QString text = clip->text().toHtmlEscaped();
-    QString trimmed = text.trimmed();
+    const QStringList formats = clip->mimeData()->formats();
+    bool onlyTextPlain = formats.contains("text/plain");
+    if (onlyTextPlain) {
+        for (const QString &format : formats) {
+            // "Special" fake mimetypes to indicate multiselections etc.
+            if (!format.contains('/') || format.toUpper() == format) {
+                continue;
+            }
+            if (format == "text/plain") {
+                continue;
+            }
+            onlyTextPlain = false;
+            break;
+        }
 
-    if (trimmed != text && !m_hasTrimmed) {
-        clip->setText(trimmed);
-        m_hasTrimmed = true;
-        return;
+        QString text = clip->text();
+        QString trimmed = text.trimmed();
+
+        if (onlyTextPlain && trimmed != text && !m_hasTrimmed) {
+            clip->setText(trimmed);
+            m_hasTrimmed = true;
+            return;
+        }
     }
 
     m_hasTrimmed = false;
 
     QFontMetrics metrics(font());
-    resize(metrics.size(Qt::TextExpandTabs, text));
 
-    QString newText;
-    int h = metrics.height() * 2;
-    for (const QString &line : text.split('\n')) {
-        newText.append(metrics.elidedText(line, Qt::ElideRight, width() - 10) + '\n');
-        if (h > height()) {
-            break;
+    QString filteredText;
+    for (const QChar &c : text) {
+        if ((c.isPrint() || c == '\n' || c == '\t') && (c.script() == QChar::Script_Latin || c.script() == QChar::Script_Common)) {
+            filteredText += c;
+            continue;
         }
-        h += metrics.height();
-    }
 
-    m_label->setText(newText);
-    m_label->setSelection(0, newText.length());
+        qDebug() << c << c.script() << c.category();
+
+        filteredText += "0x" + QString::number(c.unicode(), 16);
+    }
+    text = filteredText;
+
+    QRect boundingRect = QRect(0, 0, maximumWidth(), maximumHeight());
+    boundingRect = metrics.boundingRect(boundingRect, Qt::TextWordWrap, text);
+    boundingRect = boundingRect.marginsAdded(QMargins(20, 20, 20, 20));
+
+    if (boundingRect.height() > maximumHeight()) {
+        m_label->setWordWrap(false);
+
+        QString newText;
+        int h = metrics.height() * 2;
+        for (const QString &line : text.split('\n')) {
+            newText.append(metrics.elidedText(line, Qt::ElideRight, m_label->width() - 20) + '\n');
+            h += metrics.height();
+        }
+        text = newText;
+        boundingRect.setHeight(h);
+    } else {
+        m_label->setWordWrap(true);
+    }
+    resize(boundingRect.size());
+
+    m_label->setText(text);
+    m_label->setSelection(0, text.length());
     updateGeometry();
 }
 
