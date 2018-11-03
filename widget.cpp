@@ -125,6 +125,13 @@ void Widget::onClipboardUpdated()
     if (clip->mimeData()->hasImage()) {
         QImage image = clip->image();
         QSize origSize = image.size();
+        const int minWidth = minimumWidth() - 20;
+        const int minHeight = minimumHeight() - 20;
+        if (image.width() <= image.height() && image.height() < minimumHeight() - 20) {
+            image = image.scaledToHeight(minHeight);
+        } else if (image.width() < minWidth) {
+            image = image.scaledToWidth(minWidth);
+        }
         if (image.width() > maximumWidth() - 10) {
             image = image.scaledToWidth(maximumWidth() - 10);
         }
@@ -153,6 +160,8 @@ void Widget::onClipboardUpdated()
         return;
     }
 
+    QString text = clip->text();
+
     const QStringList formats = clip->mimeData()->formats();
     bool onlyTextPlain = formats.contains("text/plain");
     if (onlyTextPlain) {
@@ -161,14 +170,13 @@ void Widget::onClipboardUpdated()
             if (!format.contains('/') || format.toUpper() == format) {
                 continue;
             }
-            if (format == "text/plain") {
+            if (format == "text/plain" || format == "text/html") {
                 continue;
             }
             onlyTextPlain = false;
             break;
         }
 
-        QString text = clip->text();
         QString trimmed = text.trimmed();
 
         if (onlyTextPlain && trimmed != text && !m_hasTrimmed) {
