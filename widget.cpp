@@ -139,6 +139,8 @@ void Widget::onClipboardUpdated()
             image = image.scaledToHeight(maximumHeight() - 10);
         }
 
+        image = image.convertToFormat(QImage::Format_ARGB32);
+
         {
             QPainter p(&image);
             QFont font;
