@@ -40,8 +40,7 @@ Widget::Widget() : QWidget(),
     font.setPixelSize(15);
     setFont(font);
 
-    //connect(qApp->clipboard(), &QClipboard::dataChanged, this, &Widget::onClipboardUpdated);
-    connect(qApp->clipboard(), &QClipboard::dataChanged, &m_updateTimer, [=]() { m_updateTimer.start(10); });
+    connect(qApp->clipboard(), &QClipboard::dataChanged, &m_updateTimer, [=]() { m_updateTimer.start(100); });
     connect(&m_updateTimer, &QTimer::timeout, this, &Widget::onClipboardUpdated);
     m_updateTimer.setSingleShot(true);
 
@@ -124,6 +123,23 @@ void Widget::onClipboardUpdated()
 
     if (clip->mimeData()->hasImage()) {
         QImage image = clip->image();
+
+        if (image.isNull()) {
+            // Workaround for what I think is a bug introduced in qt base with
+            // commit 730cbad8824bcfcb7ab60371a6563cfb6dd5658d
+            // It means that the entire image isn't fetched when we first
+            // request it, so we have to retry later.
+            if (m_imageRetries++ < 5) {
+                m_updateTimer.start(100);
+            } else {
+                qWarning() << "Too many retries";
+                m_imageRetries = 0;
+            }
+
+            qWarning() << "Got null image";
+            return;
+        }
+
         QSize origSize = image.size();
         const int minWidth = minimumWidth() - 20;
         const int minHeight = minimumHeight() - 20;
@@ -159,8 +175,10 @@ void Widget::onClipboardUpdated()
         resize(image.size());
         updateGeometry();
         m_hasTrimmed = false;
+        m_imageRetries = 0;
         return;
     }
+    m_imageRetries = 0;
 
     QString text = clip->text();
 

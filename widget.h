@@ -30,6 +30,7 @@ private:
     QTimer m_updateTimer;
 
     bool m_hasTrimmed = false;
+    int m_imageRetries = 0;
 };
 
 #endif // WIDGET_H
