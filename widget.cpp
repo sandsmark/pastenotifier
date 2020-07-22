@@ -40,7 +40,12 @@ Widget::Widget() : QWidget(),
     font.setPixelSize(15);
     setFont(font);
 
-    connect(qApp->clipboard(), &QClipboard::dataChanged, &m_updateTimer, [=]() { m_updateTimer.start(100); });
+    connect(qApp->clipboard(), &QClipboard::dataChanged, &m_updateTimer, [=]() {
+        if (!m_updateTimer.isActive()) {
+            m_updateTimer.start(100);
+        }
+    });
+
     connect(&m_updateTimer, &QTimer::timeout, this, &Widget::onClipboardUpdated);
     m_updateTimer.setSingleShot(true);
 
@@ -130,7 +135,10 @@ void Widget::onClipboardUpdated()
             // It means that the entire image isn't fetched when we first
             // request it, so we have to retry later.
             if (m_imageRetries++ < 5) {
-                m_updateTimer.start(100);
+                qWarning() << "Got null image, retry number" << m_imageRetries;
+                if (!m_updateTimer.isActive()) {
+                    m_updateTimer.start(100);
+                }
             } else {
                 qWarning() << "Too many retries";
                 m_imageRetries = 0;
