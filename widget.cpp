@@ -139,44 +139,58 @@ void Widget::onClipboardUpdated()
                 if (!m_updateTimer.isActive()) {
                     m_updateTimer.start(100);
                 }
-            } else {
-                qWarning() << "Too many retries";
-                m_imageRetries = 0;
+                return;
             }
 
-            qWarning() << "Got null image";
-            return;
-        }
+            qWarning() << "Got null image, too many retries";
+            m_imageRetries = 0;
 
-        QSize origSize = image.size();
-        const int minWidth = minimumWidth() - 20;
-        const int minHeight = minimumHeight() - 20;
-        if (image.width() <= image.height() && image.height() < minimumHeight() - 20) {
-            image = image.scaledToHeight(minHeight);
-        } else if (image.width() < minWidth) {
-            image = image.scaledToWidth(minWidth);
-        }
-        if (image.width() > maximumWidth() - 10) {
-            image = image.scaledToWidth(maximumWidth() - 10);
-        }
-        if (image.height() > maximumHeight() - 10) {
-            image = image.scaledToHeight(maximumHeight() - 10);
-        }
+            QFont f = font();
+            f.setPixelSize(15);
 
-        image = image.convertToFormat(QImage::Format_ARGB32);
+            const QString text = tr("Failed to fetch image from clipboard");
+            QRect rect = QFontMetrics(f).boundingRect(text).marginsAdded(QMargins(5, 5, 5, 5));
+            rect.moveTo(2, 2);
 
-        {
+            image = QImage(rect.size(), QImage::Format_ARGB32);
+            image.fill(Qt::red);
             QPainter p(&image);
-            QFont font;
-            font.setPixelSize(15);
-            p.setFont(font);
-            QFontMetrics metrics(font);
-            QString text = QString::number(origSize.width()) + "x" + QString::number(origSize.height());
-            QRect rect = metrics.boundingRect(text).marginsAdded(QMargins(5, 5, 5, 5));
-            rect.moveTopLeft(QPoint(0, 0));
-            p.fillRect(rect, QColor(0, 0, 0, 128));
+
+            p.setFont(f);
+            f.setBold(true);
             p.setPen(Qt::white);
-            p.drawText(rect, Qt::AlignCenter, text);
+            p.drawText(rect, text);
+        } else {
+            QSize origSize = image.size();
+            const int minWidth = minimumWidth() - 20;
+            const int minHeight = minimumHeight() - 20;
+            if (image.width() <= image.height() && image.height() < minimumHeight() - 20) {
+                image = image.scaledToHeight(minHeight);
+            } else if (image.width() < minWidth) {
+                image = image.scaledToWidth(minWidth);
+            }
+            if (image.width() > maximumWidth() - 10) {
+                image = image.scaledToWidth(maximumWidth() - 10);
+            }
+            if (image.height() > maximumHeight() - 10) {
+                image = image.scaledToHeight(maximumHeight() - 10);
+            }
+
+            image = image.convertToFormat(QImage::Format_ARGB32);
+
+            {
+                QPainter p(&image);
+                QFont font;
+                font.setPixelSize(15);
+                p.setFont(font);
+                QFontMetrics metrics(font);
+                QString text = QString::number(origSize.width()) + "x" + QString::number(origSize.height());
+                QRect rect = metrics.boundingRect(text).marginsAdded(QMargins(5, 5, 5, 5));
+                rect.moveTopLeft(QPoint(0, 0));
+                p.fillRect(rect, QColor(0, 0, 0, 128));
+                p.setPen(Qt::white);
+                p.drawText(rect, Qt::AlignCenter, text);
+            }
         }
 
         m_label->setPixmap(QPixmap::fromImage(image));
@@ -186,6 +200,7 @@ void Widget::onClipboardUpdated()
         m_imageRetries = 0;
         return;
     }
+
     m_imageRetries = 0;
 
     QString text = clip->text();
