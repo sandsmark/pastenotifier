@@ -250,13 +250,13 @@ void Widget::onClipboardUpdated()
     boundingRect = metrics.boundingRect(boundingRect, Qt::TextWordWrap, text);
     boundingRect = boundingRect.marginsAdded(QMargins(20, 20, 20, 20));
 
-    if (boundingRect.height() > maximumHeight()) {
+    if (boundingRect.height() > maximumHeight() || boundingRect.width() > maximumWidth()) {
         m_label->setWordWrap(false);
 
         QString newText;
         int h = metrics.height() * 2;
         for (const QString &line : text.split('\n')) {
-            newText.append(metrics.elidedText(line, Qt::ElideRight, m_label->width() - 20) + '\n');
+            newText.append(metrics.elidedText(line, Qt::ElideRight, maximumWidth() - 20) + '\n');
             h += metrics.height();
         }
         text = newText;
