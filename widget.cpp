@@ -125,9 +125,10 @@ void Widget::leaveEvent(QEvent *)
 void Widget::onClipboardUpdated()
 {
     QClipboard *clip = qApp->clipboard();
+    const QMimeData *mimeData = clip->mimeData();
 
-    if (clip->mimeData()->hasImage()) {
-        QImage image = clip->image();
+    if (mimeData->hasImage()) {
+        QImage image = qvariant_cast<QImage>(mimeData->imageData());
 
         if (image.isNull()) {
             // Workaround for what I think is a bug introduced in qt base with
@@ -203,9 +204,9 @@ void Widget::onClipboardUpdated()
 
     m_imageRetries = 0;
 
-    QString text = clip->text();
+    QString text = mimeData->text();
 
-    const QStringList formats = clip->mimeData()->formats();
+    const QStringList formats = mimeData->formats();
     bool onlyTextPlain = formats.contains("text/plain");
     if (onlyTextPlain) {
         for (const QString &format : formats) {
