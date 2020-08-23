@@ -42,7 +42,7 @@ Widget::Widget() : QWidget(),
 
     connect(qApp->clipboard(), &QClipboard::dataChanged, &m_updateTimer, [=]() {
         if (!m_updateTimer.isActive()) {
-            m_updateTimer.start(100);
+            m_updateTimer.start(16);
         }
     });
 
@@ -137,7 +137,7 @@ void Widget::onClipboardUpdated()
             if (m_imageRetries++ < 5) {
                 qWarning() << "Got null image, retry number" << m_imageRetries;
                 if (!m_updateTimer.isActive()) {
-                    m_updateTimer.start(100);
+                    m_updateTimer.start(16);
                 }
                 return;
             }
