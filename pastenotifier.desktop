@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=pastenotifier
+Comment=Simple application showing what is copied to the clipboard
+Categories=Utility;
+Exec=pastenotifier
